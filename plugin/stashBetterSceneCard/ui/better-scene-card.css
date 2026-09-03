@@ -8,11 +8,17 @@
 
 .better-scene-card__badge-bar {
   display: flex;
+  flex-direction: column;
   gap: 0.35rem;
   left: 0.5rem;
   position: absolute;
-  top: 2.25rem;
+  top: 0.5rem;
   z-index: 2;
+}
+
+.scene-card.better-scene-card .card-controls {
+  left: auto;
+  right: 0.5rem;
 }
 
 .better-scene-card__badge {
