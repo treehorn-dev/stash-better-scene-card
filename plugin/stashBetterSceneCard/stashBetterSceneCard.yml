@@ -5,6 +5,8 @@ url: https://github.com/treehorn-dev/stash-better-scene-card
 interface: raw
 ui:
   javascript:
+    - ui/card-rules-model.js
+    - ui/performer-age-cache.js
     - ui/better-scene-card.js
   css:
     - ui/better-scene-card.css
