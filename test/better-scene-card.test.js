@@ -67,6 +67,11 @@ test("registers only after patches and exposes the page-local score registry", (
   const badge = badgeElement.type(badgeElement.props);
   assert.equal(badge.props.className.includes("better-scene-card__badge--predicted"), true);
   assert.equal(badge.props.children[0], "4.2");
+
+  const oPlayBadgeElement = overlay.props.children[1].props.children[1];
+  const oPlayBadge = oPlayBadgeElement.type(oPlayBadgeElement.props);
+  assert.equal(oPlayBadge.props.className.includes("better-scene-card__o-play--0"), true);
+
   root.StashBetterSceneCard.clearRecommendationScores();
 });
 

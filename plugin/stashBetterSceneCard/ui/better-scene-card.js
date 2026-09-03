@@ -84,6 +84,21 @@
     );
   }
 
+  function OPlayBadge({ scene }) {
+    const plays = Number(scene.play_count) || 0;
+    const oCount = Number(scene.o_counter) || 0;
+    const ratio = plays > 0 ? Math.max(0, Math.min(1, oCount / plays)) : 0;
+    const bucket = Math.round(ratio * 100);
+    return React.createElement(
+      "span",
+      {
+        className: `better-scene-card__badge better-scene-card__o-play better-scene-card__o-play--${bucket}`,
+        title: "O-to-play ratio",
+      },
+      `O/P ${bucket}%`,
+    );
+  }
+
   PluginApi.patch.after("SceneCard", (props, result) => {
     const scene = props.scene || {};
     const className = [
@@ -117,6 +132,7 @@
         "div",
         { className: "better-scene-card__badge-bar" },
         React.createElement(ScoreBadge, { scene: props.scene || {} }),
+        React.createElement(OPlayBadge, { scene: props.scene || {} }),
       ),
     ),
   );
