@@ -1,0 +1,10 @@
+name: Better Scene Card
+description: Configurable visual rules and overlays for native Stash scene cards.
+version: "0.1.0"
+url: https://github.com/treehorn-dev/stash-better-scene-card
+interface: raw
+ui:
+  javascript:
+    - ui/better-scene-card.js
+  css:
+    - ui/better-scene-card.css

@@ -1,0 +1,7 @@
+{
+  "name": "stash-better-scene-card",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  }
+}
