@@ -104,15 +104,48 @@ test("renders individual gendered age labels with continuous age colors", () => 
       },
     },
     undefined,
-    { type: "native-details", props: { children: ["date"] } },
+    {
+      type: "native-details",
+      props: {
+        children: [
+          { type: "span", props: { className: "scene-card__date", children: ["2020-01-01"] } },
+        ],
+      },
+    },
   );
 
-  const ageLineElement = details.props.children[1];
+  const dateLine = details.props.children[0];
+  const ageLineElement = dateLine.props.children.at(-1);
   const ageLine = ageLineElement.type(ageLineElement.props);
   const female = ageLine.props.children[0];
   const male = ageLine.props.children[1];
-  assert.equal(female.props.children[0], "♀ 20");
-  assert.equal(female.props.style.color, "rgb(255, 32, 0)");
-  assert.equal(male.props.children[0], "♂ 30");
-  assert.equal(male.props.style.color, "rgb(255, 191, 0)");
+  assert.equal(female.props.style, undefined);
+  assert.equal(female.props.children[0].props.children[0], "♀ ");
+  assert.equal(female.props.children[1].props.children[0], "20");
+  assert.equal(female.props.children[1].props.style.color, "rgb(255, 32, 0)");
+  assert.equal(male.props.style, undefined);
+  assert.equal(male.props.children[0].props.children[0], "♂ ");
+  assert.equal(male.props.children[1].props.children[0], "30");
+  assert.equal(male.props.children[1].props.style.color, "rgb(255, 191, 0)");
+});
+
+test("omits performer ages when the scene has no production date", () => {
+  const { patches, root } = loadPlugin();
+  root.__ageBirthdates = { "1": "2000-01-01" };
+  const details = patches.get("SceneCard.Details")(
+    { scene: { performers: [{ id: "1", gender: "FEMALE" }] } },
+    undefined,
+    {
+      type: "native-details",
+      props: {
+        children: [
+          { type: "span", props: { className: "scene-card__date", children: [] } },
+        ],
+      },
+    },
+  );
+
+  const dateLine = details.props.children[0];
+  const ageLineElement = dateLine.props.children.at(-1);
+  assert.equal(ageLineElement.type(ageLineElement.props), null);
 });

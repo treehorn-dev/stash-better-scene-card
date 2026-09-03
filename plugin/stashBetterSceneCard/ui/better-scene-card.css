@@ -75,9 +75,12 @@
 }
 
 .better-scene-card__ages {
-  display: block;
-  font-size: 0.8rem;
-  margin-top: 0.2rem;
+  display: inline;
+  margin-left: 0.4rem;
+}
+
+.better-scene-card__age + .better-scene-card__age {
+  margin-left: 0.4rem;
 }
 
 .better-scene-card__age--18 { color: #f00; }

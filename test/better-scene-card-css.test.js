@@ -19,6 +19,8 @@ test("renders compact poster badges with white text and native score palette", (
   assert.match(stylesheet, /\.better-scene-card__badge\s*\{[\s\S]*color:\s*#fff;/);
   assert.match(stylesheet, /\.better-scene-card__badge--predicted\s*\{[\s\S]*background:\s*rgba\(0,\s*0,\s*0,\s*0\.65\)/);
   assert.match(stylesheet, /\.better-scene-card__badge\.rating-100-20\s*\{[\s\S]*--better-scene-card-score-color:\s*#f00;/);
+  assert.match(stylesheet, /\.better-scene-card__ages\s*\{[\s\S]*display:\s*inline;/);
+  assert.doesNotMatch(stylesheet, /\.better-scene-card__ages\s*\{[\s\S]*font-size:/);
 });
 
 test("styles multi-video, fileless, O/play, and clamped age states", () => {

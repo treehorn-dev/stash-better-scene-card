@@ -28,11 +28,8 @@
     return response.data?.findPerformers?.performers || [];
   });
 
-  function today() {
-    return new Date().toISOString().slice(0, 10);
-  }
-
   function AgeLine({ scene }) {
+    if (!scene.date) return null;
     const performers = (scene.performers || []).filter((performer) => performer.id);
     const [birthdates, setBirthdates] = React.useState(null);
     const ids = performers.map((performer) => String(performer.id));
@@ -54,7 +51,7 @@
         ...performer,
         birthdate: birthdates[String(performer.id)],
       })),
-      scene.date || today(),
+      scene.date,
     );
     if (ages.female === null && ages.male === null) return null;
 
@@ -63,8 +60,13 @@
       labels.push(
         React.createElement(
           "span",
-          { className: "better-scene-card__age", style: { color: rules.ageColor(ages.female) } },
-          `♀ ${ages.female}`,
+          { className: "better-scene-card__age" },
+          React.createElement("span", { className: "better-scene-card__age-symbol" }, "♀ "),
+          React.createElement(
+            "span",
+            { className: "better-scene-card__age-value", style: { color: rules.ageColor(ages.female) } },
+            String(ages.female),
+          ),
         ),
       );
     }
@@ -72,8 +74,13 @@
       labels.push(
         React.createElement(
           "span",
-          { className: "better-scene-card__age", style: { color: rules.ageColor(ages.male) } },
-          `♂ ${ages.male}`,
+          { className: "better-scene-card__age" },
+          React.createElement("span", { className: "better-scene-card__age-symbol" }, "♂ "),
+          React.createElement(
+            "span",
+            { className: "better-scene-card__age-value", style: { color: rules.ageColor(ages.male) } },
+            String(ages.male),
+          ),
         ),
       );
     }
@@ -136,13 +143,27 @@
     const result = args.at(-1);
     if (!result?.props) return result;
     const scene = props.scene || {};
+    const children = Array.isArray(result.props.children)
+      ? [...result.props.children]
+      : [result.props.children];
+    const dateIndex = children.findIndex((child) =>
+      String(child?.props?.className || "").split(" ").includes("scene-card__date"),
+    );
+    if (dateIndex < 0) return result;
+    const dateElement = children[dateIndex];
+    const dateChildren = Array.isArray(dateElement.props.children)
+      ? dateElement.props.children
+      : [dateElement.props.children];
+    children[dateIndex] = React.cloneElement(
+      dateElement,
+      null,
+      ...dateChildren,
+      React.createElement(AgeLine, { scene }),
+    );
     return React.cloneElement(
       result,
       null,
-      ...(Array.isArray(result.props.children)
-        ? result.props.children
-        : [result.props.children]),
-      React.createElement(AgeLine, { scene }),
+      ...children,
     );
   });
 
