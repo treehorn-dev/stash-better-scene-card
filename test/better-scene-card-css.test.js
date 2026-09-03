@@ -15,6 +15,7 @@ test("scopes the stock ribbon replacement to native scene cards", () => {
 
 test("renders compact poster badges with white text and native score palette", () => {
   assert.match(stylesheet, /\.better-scene-card__badge-bar\s*\{[\s\S]*position:\s*absolute;/);
+  assert.match(stylesheet, /\.better-scene-card__badge-bar\s*\{[\s\S]*top:\s*2\.25rem;/);
   assert.match(stylesheet, /\.better-scene-card__badge\s*\{[\s\S]*color:\s*#fff;/);
   assert.match(stylesheet, /\.better-scene-card__badge--predicted\s*\{[\s\S]*background:\s*rgba\(0,\s*0,\s*0,\s*0\.65\)/);
   assert.match(stylesheet, /\.better-scene-card__badge\.rating-100-20\s*\{[\s\S]*--better-scene-card-score-color:\s*#f00;/);
