@@ -116,7 +116,10 @@
     );
   }
 
-  PluginApi.patch.after("SceneCard", (props, result) => {
+  PluginApi.patch.after("SceneCard", (...args) => {
+    const props = args[0] || {};
+    const result = args.at(-1);
+    if (!result?.props) return result;
     const scene = props.scene || {};
     const className = [
       result.props.className,
@@ -128,7 +131,10 @@
     return React.cloneElement(result, { className });
   });
 
-  PluginApi.patch.after("SceneCard.Details", (props, result) => {
+  PluginApi.patch.after("SceneCard.Details", (...args) => {
+    const props = args[0] || {};
+    const result = args.at(-1);
+    if (!result?.props) return result;
     const scene = props.scene || {};
     return React.cloneElement(
       result,
@@ -140,8 +146,11 @@
     );
   });
 
-  PluginApi.patch.after("SceneCard.Overlays", (props, result) =>
-    React.createElement(
+  PluginApi.patch.after("SceneCard.Overlays", (...args) => {
+    const props = args[0] || {};
+    const result = args.at(-1);
+    if (!result) return result;
+    return React.createElement(
       React.Fragment,
       null,
       result,
@@ -151,8 +160,8 @@
         React.createElement(ScoreBadge, { scene: props.scene || {} }),
         React.createElement(OPlayBadge, { scene: props.scene || {} }),
       ),
-    ),
-  );
+    );
+  });
 
   root.StashBetterSceneCard = {
     clearRecommendationScores() {
