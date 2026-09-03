@@ -62,6 +62,7 @@ test("registers only after patches and exposes the page-local score registry", (
 
   const overlay = patches.get("SceneCard.Overlays")(
     { scene: { id: "42", rating100: null } },
+    undefined,
     { type: "native-overlays", props: { children: [] } },
   );
   const badgeElement = overlay.props.children[1].props.children[0];
@@ -81,6 +82,7 @@ test("patches the native root with card rule classes", () => {
   const nativeCard = { type: "native-card", props: { className: "scene-card" } };
   const result = patches.get("SceneCard")(
     { scene: { files: [], o_counter: 1, play_count: 2 } },
+    undefined,
     nativeCard,
   );
 
@@ -101,6 +103,7 @@ test("renders individual gendered age labels with continuous age colors", () => 
         ],
       },
     },
+    undefined,
     { type: "native-details", props: { children: ["date"] } },
   );
 
