@@ -8,6 +8,7 @@ const rules = require("../plugin/stashBetterSceneCard/ui/card-rules-model.js");
 
 function loadPlugin() {
   const patches = new Map();
+  let root;
   const React = {
     createElement(type, props, ...children) {
       return { type, props: { ...props, children } };
@@ -20,10 +21,10 @@ function loadPlugin() {
     },
     useEffect() {},
     useState(initial) {
-      return [initial, () => {}];
+      return [root.__ageBirthdates ?? initial, () => {}];
     },
   };
-  const root = {
+  root = {
     PluginApi: {
       React,
       libraries: { Apollo: { gql: (strings) => strings.join("") } },
@@ -85,4 +86,30 @@ test("patches the native root with card rule classes", () => {
 
   assert.equal(result.props.className.includes("better-scene-card--fileless"), true);
   assert.equal(result.props.className.includes("better-scene-card--o-play-50"), true);
+});
+
+test("renders individual gendered age labels with continuous age colors", () => {
+  const { patches, root } = loadPlugin();
+  root.__ageBirthdates = { "1": "2000-01-01", "2": "1990-01-01" };
+  const details = patches.get("SceneCard.Details")(
+    {
+      scene: {
+        date: "2020-01-01",
+        performers: [
+          { id: "1", gender: "FEMALE" },
+          { id: "2", gender: "MALE" },
+        ],
+      },
+    },
+    { type: "native-details", props: { children: ["date"] } },
+  );
+
+  const ageLineElement = details.props.children[1];
+  const ageLine = ageLineElement.type(ageLineElement.props);
+  const female = ageLine.props.children[0];
+  const male = ageLine.props.children[1];
+  assert.equal(female.props.children[0], "♀ 20");
+  assert.equal(female.props.style.color, "rgb(255, 32, 0)");
+  assert.equal(male.props.children[0], "♂ 30");
+  assert.equal(male.props.style.color, "rgb(255, 191, 0)");
 });

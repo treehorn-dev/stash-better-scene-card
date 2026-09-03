@@ -78,5 +78,34 @@
     return classes;
   }
 
-  return { ageOnDate, cardRuleClasses, genderedMeanAges, ratingBadge };
+  function clamp(value, minimum, maximum) {
+    return Math.max(minimum, Math.min(maximum, value));
+  }
+
+  function rgb(red, green, blue) {
+    return `rgb(${Math.round(red)}, ${Math.round(green)}, ${Math.round(blue)})`;
+  }
+
+  function ageColor(age) {
+    const value = clamp(Number(age) || 18, 18, 50);
+    if (value <= 34) {
+      const progress = (value - 18) / 16;
+      return rgb(255, progress * 255, 0);
+    }
+    const progress = (value - 34) / 16;
+    return rgb(255 * (1 - progress), 255 * (1 - progress), progress * 255);
+  }
+
+  function oPlayColor(ratio) {
+    return rgb(clamp(Number(ratio) || 0, 0, 1) * 255, 0, 0);
+  }
+
+  return {
+    ageColor,
+    ageOnDate,
+    cardRuleClasses,
+    genderedMeanAges,
+    oPlayColor,
+    ratingBadge,
+  };
 });

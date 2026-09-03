@@ -59,12 +59,28 @@
     if (ages.female === null && ages.male === null) return null;
 
     const labels = [];
-    if (ages.female !== null) labels.push(`♀ ${ages.female}`);
-    if (ages.male !== null) labels.push(`♂ ${ages.male}`);
+    if (ages.female !== null) {
+      labels.push(
+        React.createElement(
+          "span",
+          { className: "better-scene-card__age", style: { color: rules.ageColor(ages.female) } },
+          `♀ ${ages.female}`,
+        ),
+      );
+    }
+    if (ages.male !== null) {
+      labels.push(
+        React.createElement(
+          "span",
+          { className: "better-scene-card__age", style: { color: rules.ageColor(ages.male) } },
+          `♂ ${ages.male}`,
+        ),
+      );
+    }
     return React.createElement(
       "span",
       { className: "better-scene-card__ages" },
-      labels.join("  "),
+      ...labels,
     );
   }
 
@@ -93,6 +109,7 @@
       "span",
       {
         className: `better-scene-card__badge better-scene-card__o-play better-scene-card__o-play--${bucket}`,
+        style: { backgroundColor: rules.oPlayColor(ratio) },
         title: "O-to-play ratio",
       },
       `O/P ${bucket}%`,

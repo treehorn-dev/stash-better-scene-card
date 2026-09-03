@@ -3,8 +3,10 @@ const assert = require("node:assert/strict");
 
 const {
   ageOnDate,
+  ageColor,
   cardRuleClasses,
   genderedMeanAges,
+  oPlayColor,
   ratingBadge,
 } = require("../plugin/stashBetterSceneCard/ui/card-rules-model.js");
 
@@ -60,4 +62,20 @@ test("cardRuleClasses flags fileless and multi-video scenes with a clamped O/pla
     cardRuleClasses({ files: [], o_counter: 0, play_count: 4 }),
     ["better-scene-card--fileless", "better-scene-card--o-play-0"],
   );
+});
+
+test("ageColor interpolates the clamped red, yellow, and blue anchors", () => {
+  assert.equal(ageColor(10), "rgb(255, 0, 0)");
+  assert.equal(ageColor(18), "rgb(255, 0, 0)");
+  assert.equal(ageColor(26), "rgb(255, 128, 0)");
+  assert.equal(ageColor(34), "rgb(255, 255, 0)");
+  assert.equal(ageColor(42), "rgb(128, 128, 128)");
+  assert.equal(ageColor(50), "rgb(0, 0, 255)");
+  assert.equal(ageColor(60), "rgb(0, 0, 255)");
+});
+
+test("oPlayColor interpolates the clamped black-to-red ratio", () => {
+  assert.equal(oPlayColor(-1), "rgb(0, 0, 0)");
+  assert.equal(oPlayColor(0.5), "rgb(128, 0, 0)");
+  assert.equal(oPlayColor(3), "rgb(255, 0, 0)");
 });
