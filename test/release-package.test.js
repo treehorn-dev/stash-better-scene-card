@@ -23,21 +23,25 @@ test("builds an installable Stash package and matching release index", () => {
     execFileSync("python3", [
       "scripts/build_plugin_package.py",
       "--version",
-      "0.1.0",
+      "0.1.1",
       "--output-dir",
       outputDir,
     ], { cwd: root });
 
-    const archivePath = path.join(outputDir, "stashBetterSceneCard-0.1.0.zip");
+    const archivePath = path.join(outputDir, "stashBetterSceneCard-0.1.1.zip");
     const index = fs.readFileSync(path.join(outputDir, "index.yml"), "utf8");
     const checksum = crypto.createHash("sha256").update(fs.readFileSync(archivePath)).digest("hex");
     const members = execFileSync("unzip", ["-Z1", archivePath], { encoding: "utf8" });
+    const manifest = execFileSync("unzip", ["-p", archivePath, "stashBetterSceneCard.yml"], {
+      encoding: "utf8",
+    });
 
     assert.match(index, /^- id: stashBetterSceneCard$/m);
-    assert.match(index, /^  version: "0\.1\.0"$/m);
-    assert.match(index, /releases\/download\/v0\.1\.0\/stashBetterSceneCard-0\.1\.0\.zip/);
+    assert.match(index, /^  version: "0\.1\.1"$/m);
+    assert.match(index, /releases\/download\/v0\.1\.1\/stashBetterSceneCard-0\.1\.1\.zip/);
     assert.match(index, new RegExp(`^  sha256: ${checksum}$`, "m"));
     assert.match(members, /^stashBetterSceneCard\.yml$/m);
+    assert.match(manifest, /^version: "0\.1\.1"$/m);
     assert.match(members, /^ui\/better-scene-card\.js$/m);
     assert.match(members, /^ui\/better-scene-card\.css$/m);
     assert.match(members, /^docs\/chip-slots-tutorial\.md$/m);

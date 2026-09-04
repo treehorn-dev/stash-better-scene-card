@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -32,7 +33,18 @@ def build(version: str, output_dir: Path, released_at: datetime) -> tuple[Path, 
                 if member.is_relative_to(PLUGIN_ROOT)
                 else member
             )
-            archive.write(member, member_name)
+            if member == PLUGIN_ROOT / "stashBetterSceneCard.yml":
+                manifest = member.read_text()
+                manifest = re.sub(
+                    r'^version: ".*"$',
+                    f'version: "{version}"',
+                    manifest,
+                    count=1,
+                    flags=re.MULTILINE,
+                )
+                archive.writestr(str(member_name), manifest)
+            else:
+                archive.write(member, member_name)
 
     checksum = hashlib.sha256(archive_path.read_bytes()).hexdigest()
     release_tag = f"v{version}"
