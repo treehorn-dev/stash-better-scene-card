@@ -1,0 +1,46 @@
+const assert = require("node:assert/strict");
+const crypto = require("node:crypto");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const { execFileSync } = require("node:child_process");
+const test = require("node:test");
+
+const root = path.join(__dirname, "..");
+
+test("publishes tag builds as GitHub release assets", () => {
+  const workflow = fs.readFileSync(path.join(root, ".github", "workflows", "release-plugin.yml"), "utf8");
+
+  assert.match(workflow, /tags:\s*\n\s*- "v\*"/);
+  assert.match(workflow, /scripts\/build_plugin_package\.py/);
+  assert.match(workflow, /gh release create/);
+});
+
+test("builds an installable Stash package and matching release index", () => {
+  const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "better-scene-card-release-"));
+
+  try {
+    execFileSync("python3", [
+      "scripts/build_plugin_package.py",
+      "--version",
+      "0.1.0",
+      "--output-dir",
+      outputDir,
+    ], { cwd: root });
+
+    const archivePath = path.join(outputDir, "stashBetterSceneCard-0.1.0.zip");
+    const index = fs.readFileSync(path.join(outputDir, "index.yml"), "utf8");
+    const checksum = crypto.createHash("sha256").update(fs.readFileSync(archivePath)).digest("hex");
+    const members = execFileSync("unzip", ["-Z1", archivePath], { encoding: "utf8" });
+
+    assert.match(index, /^- id: stashBetterSceneCard$/m);
+    assert.match(index, /^  version: "0\.1\.0"$/m);
+    assert.match(index, /releases\/download\/v0\.1\.0\/stashBetterSceneCard-0\.1\.0\.zip/);
+    assert.match(index, new RegExp(`^  sha256: ${checksum}$`, "m"));
+    assert.match(members, /^stashBetterSceneCard\.yml$/m);
+    assert.match(members, /^ui\/better-scene-card\.js$/m);
+    assert.match(members, /^ui\/better-scene-card\.css$/m);
+  } finally {
+    fs.rmSync(outputDir, { recursive: true, force: true });
+  }
+});
