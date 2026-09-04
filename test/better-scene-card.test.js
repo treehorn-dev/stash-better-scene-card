@@ -145,3 +145,30 @@ test("omits performer ages when the scene has no valid production date", () => {
   assert.equal(details.props.children.length, 1);
   assert.deepEqual(details.props.children[0].props.children, [""]);
 });
+
+test("uses ISO year and year-month scene dates for ages without changing displayed date text", () => {
+  for (const [sceneDate, expectedAge] of [["2022", "21"], ["2022-03", "22"]]) {
+    const { patches, root } = loadPlugin();
+    root.__ageBirthdates = { "1": "2000-02-15" };
+    const dateLine = {
+      type: "span",
+      props: { className: "scene-card__date", children: [sceneDate] },
+    };
+    const details = patches.get("SceneCard.Details")(
+      {
+        scene: {
+          date: sceneDate,
+          performers: [{ id: "1", gender: "FEMALE" }],
+        },
+      },
+      undefined,
+      { type: "native-details", props: { children: [dateLine] } },
+    );
+
+    const patchedDateLine = details.props.children[0];
+    assert.equal(patchedDateLine.props.children[0], sceneDate);
+    const ageLineElement = patchedDateLine.props.children[1];
+    const ageLine = ageLineElement.type(ageLineElement.props);
+    assert.equal(ageLine.props.children[2].props.children[0], expectedAge);
+  }
+});

@@ -28,19 +28,22 @@
     return response.data?.findPerformers?.performers || [];
   });
 
-  function validProductionDate(value) {
-    if (typeof value !== "string") return false;
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-    if (!match) return false;
+  function normalizedProductionDate(value) {
+    if (typeof value !== "string") return null;
+    const match = /^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/.exec(value);
+    if (!match) return null;
     const year = Number(match[1]);
-    const month = Number(match[2]);
-    const day = Number(match[3]);
+    const month = Number(match[2] || "01");
+    const day = Number(match[3] || "01");
     const date = new Date(Date.UTC(year, month - 1, day));
-    return (
+    if (
       date.getUTCFullYear() === year &&
       date.getUTCMonth() === month - 1 &&
       date.getUTCDate() === day
-    );
+    ) {
+      return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    }
+    return null;
   }
 
   function AgeLine({ scene }) {
@@ -60,13 +63,14 @@
     }, [ids.join(",")]);
 
     if (!birthdates) return null;
-    if (!validProductionDate(scene.date)) return null;
+    const productionDate = normalizedProductionDate(scene.date);
+    if (!productionDate) return null;
     const ages = rules.genderedMeanAges(
       performers.map((performer) => ({
         ...performer,
         birthdate: birthdates[String(performer.id)],
       })),
-      scene.date,
+      productionDate,
     );
     if (ages.female === null && ages.male === null) return null;
 
@@ -159,7 +163,7 @@
     const result = args.at(-1);
     if (!result?.props) return result;
     const scene = props.scene || {};
-    if (!validProductionDate(scene.date)) return result;
+    if (!normalizedProductionDate(scene.date)) return result;
     const children = Array.isArray(result.props.children)
       ? result.props.children
       : [result.props.children];
