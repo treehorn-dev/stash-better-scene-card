@@ -40,6 +40,31 @@ test("builds an installable Stash package and matching release index", () => {
     assert.match(members, /^stashBetterSceneCard\.yml$/m);
     assert.match(members, /^ui\/better-scene-card\.js$/m);
     assert.match(members, /^ui\/better-scene-card\.css$/m);
+    assert.match(members, /^docs\/chip-slots-tutorial\.md$/m);
+
+    const tutorial = execFileSync("unzip", ["-p", archivePath, "docs/chip-slots-tutorial.md"], {
+      encoding: "utf8",
+    });
+    for (const example of [
+      "Local rating",
+      "External predicted rating",
+      "Media count",
+      "O/play ratio",
+      "helpers.icon",
+      "helpers.text",
+      '"type": "scale"',
+      '"type": "function"',
+      "registerValue",
+      "get({ scene })",
+      "load({ sceneIds, signal })",
+      "trusted code",
+      "error",
+    ]) {
+      assert.ok(
+        tutorial.toLowerCase().includes(example.toLowerCase()),
+        `tutorial should include ${example}`,
+      );
+    }
   } finally {
     fs.rmSync(outputDir, { recursive: true, force: true });
   }

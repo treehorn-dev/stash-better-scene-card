@@ -12,10 +12,12 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 REPOSITORY = "https://github.com/treehorn-dev/stash-better-scene-card"
 PLUGIN_ROOT = Path("plugin/stashBetterSceneCard")
+TUTORIAL = Path("docs/chip-slots-tutorial.md")
 
 
 def archive_members() -> list[Path]:
-    return [member for member in sorted(PLUGIN_ROOT.rglob("*")) if member.is_file()]
+    plugin_members = [member for member in sorted(PLUGIN_ROOT.rglob("*")) if member.is_file()]
+    return [*plugin_members, TUTORIAL]
 
 
 def build(version: str, output_dir: Path, released_at: datetime) -> tuple[Path, Path]:
@@ -25,7 +27,12 @@ def build(version: str, output_dir: Path, released_at: datetime) -> tuple[Path, 
 
     with ZipFile(archive_path, "w", compression=ZIP_DEFLATED) as archive:
         for member in archive_members():
-            archive.write(member, member.relative_to(PLUGIN_ROOT))
+            member_name = (
+                member.relative_to(PLUGIN_ROOT)
+                if member.is_relative_to(PLUGIN_ROOT)
+                else member
+            )
+            archive.write(member, member_name)
 
     checksum = hashlib.sha256(archive_path.read_bytes()).hexdigest()
     release_tag = f"v{version}"

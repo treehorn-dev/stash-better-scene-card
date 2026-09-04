@@ -7,9 +7,8 @@ count popovers.
 
 ## Included Rules
 
-- Replaces only native scene-card rating ribbons with a compact poster badge.
-- Shows a local rating when available; otherwise a registered predicted rating.
-- Shows an O-to-play ratio badge from black (0%) to red (100%).
+- Adds up to three configurable chips in a left poster rail.
+- Ships score and O-to-play defaults, with user-defined labels, formulas, and styles.
 - Adds female and male mean-age labels after the scene date when local performer
   birthdates are available.
 - Marks cards with two or more video files using a cyan outline.
@@ -19,21 +18,17 @@ Performer birthdates are fetched from the current Stash instance in page-local
 batches and cached only in browser memory. The plugin does not persist or send
 that data elsewhere.
 
-## Recommendation Provider API
+## Chip Configuration
 
-Providers can register a page-local score for a local Stash scene after both
-plugins load:
+Configure up to three ordered card chips through the `Chip Slots` setting. The
+setting accepts JSON and supports trusted JavaScript formula bodies, typed icon
+or text labels, color scales, custom style functions, and optional batched
+external value providers.
 
-```js
-window.StashBetterSceneCard.setRecommendationScore(sceneId, score);
-```
+See the complete, copyable guide: [Chip Slots Tutorial](docs/chip-slots-tutorial.md).
 
-`score` is clamped to `0..5`. A local Stash rating always wins over a predicted
-score. Remove all provider scores for the current page with:
-
-```js
-window.StashBetterSceneCard.clearRecommendationScores();
-```
+The tutorial is also included in every release ZIP as
+`docs/chip-slots-tutorial.md`.
 
 The Stash `SceneCard` patch targets are experimental UI API surface. Validate
 the plugin after upgrading Stash, especially `/scenes`, fileless scenes,
