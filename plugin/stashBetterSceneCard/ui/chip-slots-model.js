@@ -96,7 +96,7 @@
 
   const helpers = createHelpers();
 
-  function compileFunction(body) {
+  function compileFunction(body, options, key, message) {
     if (typeof body !== "string") return null;
     try {
       return new Function(
@@ -104,6 +104,7 @@
         `"use strict"; const { scene, helpers, value } = context; ${body}`,
       );
     } catch (_error) {
+      reportDiagnostic(options, `${key}:syntax`, `${message}; hiding slot.`);
       return null;
     }
   }
@@ -162,14 +163,24 @@
     return interpolateColor(lower.color, upper.color, (numericValue - lower.value) / range);
   }
 
-  function compileSlot(slot) {
+  function compileSlot(slot, options) {
     if (!slot || typeof slot !== "object") return null;
-    const value = compileFunction(slot.value && slot.value.body);
+    const value = compileFunction(
+      slot.value && slot.value.body,
+      options,
+      `value:${slot.value && slot.value.body}`,
+      "Chip slot value formula is invalid",
+    );
     if (!value) return null;
 
     let label = validLabel(slot.label);
     if (!label && slot.label && slot.label.type === "function") {
-      label = compileFunction(slot.label.body);
+      label = compileFunction(
+        slot.label.body,
+        options,
+        `label:${slot.label.body}`,
+        "Chip slot label formula is invalid",
+      );
     }
     if (!label) return null;
 
@@ -178,7 +189,12 @@
       color = { type: "scale", anchors: compileScale(slot.color) };
       if (!color.anchors) return null;
     } else if (slot.color && slot.color.type === "function") {
-      const fn = compileFunction(slot.color.body);
+      const fn = compileFunction(
+        slot.color.body,
+        options,
+        `color:${slot.color.body}`,
+        "Chip slot color formula is invalid",
+      );
       if (!fn) return null;
       color = { type: "function", fn };
     }
@@ -207,14 +223,19 @@
   }
 
   function parseChipSlots(source, options) {
-    if (source == null || source === "") return DEFAULT_CHIP_SLOTS.map(compileSlot);
+    if (source == null || source === "") {
+      return DEFAULT_CHIP_SLOTS.map((slot) => compileSlot(slot, options));
+    }
     try {
       const parsed = typeof source === "string" ? JSON.parse(source) : source;
       if (!Array.isArray(parsed)) throw new Error("chip_slots must be an array");
-      return parsed.slice(0, 3).map(compileSlot).filter(Boolean);
+      return parsed
+        .slice(0, 3)
+        .map((slot) => compileSlot(slot, options))
+        .filter(Boolean);
     } catch (_error) {
       reportDiagnostic(options, `invalid-json:${String(source)}`, "Invalid chip_slots JSON; using defaults.");
-      return DEFAULT_CHIP_SLOTS.map(compileSlot);
+      return DEFAULT_CHIP_SLOTS.map((slot) => compileSlot(slot, options));
     }
   }
 

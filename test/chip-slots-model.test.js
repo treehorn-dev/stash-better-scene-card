@@ -191,3 +191,19 @@ test("invalid JSON and formula failures produce deduplicated diagnostics", () =>
     "Chip slot value formula failed; hiding slot.",
   ]);
 });
+
+test("malformed formula syntax produces one diagnostic and omits the slot", () => {
+  clearDiagnostics();
+  const diagnostics = [];
+  const options = { onDiagnostic: (diagnostic) => diagnostics.push(diagnostic) };
+  const source = JSON.stringify([
+    {
+      label: { type: "icon", name: "star" },
+      value: { type: "function", body: "return (scene.rating100;" },
+    },
+  ]);
+
+  assert.deepEqual(parseChipSlots(source, options), []);
+  assert.deepEqual(parseChipSlots(source, options), []);
+  assert.deepEqual(diagnostics, ["Chip slot value formula is invalid; hiding slot."]);
+});
