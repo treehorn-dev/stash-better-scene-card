@@ -5,6 +5,7 @@ const test = require("node:test");
 const vm = require("node:vm");
 
 const rules = require("../plugin/stashBetterSceneCard/ui/card-rules-model.js");
+const chipSlotsApi = require("../plugin/stashBetterSceneCard/ui/chip-slots-model.js");
 const valueRegistryApi = require("../plugin/stashBetterSceneCard/ui/value-provider-registry.js");
 
 function loadPlugin() {
@@ -20,7 +21,9 @@ function loadPlugin() {
         props: { ...element.props, ...props, children: children.length ? children : element.props.children },
       };
     },
-    useEffect() {},
+    useEffect(effect) {
+      root.__effects.push(effect);
+    },
     useState(initial) {
       return [root.__ageBirthdates ?? initial, () => {}];
     },
@@ -28,6 +31,11 @@ function loadPlugin() {
   root = {
     PluginApi: {
       React,
+      hooks: {
+        useSettings: () => ({
+          plugins: { stashBetterSceneCard: { chip_slots: root.__chipSlots || "" } },
+        }),
+      },
       libraries: { Apollo: { gql: (strings) => strings.join("") } },
       patch: {
         after(name, callback) {
@@ -41,10 +49,12 @@ function loadPlugin() {
       },
     },
     StashBetterSceneCardRules: rules,
+    StashBetterSceneCardChipSlots: chipSlotsApi,
     StashBetterSceneCardAgeCache: {
       createPerformerAgeCache: () => ({ getMany: async () => ({}) }),
     },
     StashBetterSceneCardValueRegistry: valueRegistryApi,
+    __effects: [],
   };
   root.globalThis = root;
   vm.runInNewContext(
@@ -87,6 +97,37 @@ test("registers only after patches and exposes provider registration with overla
   assert.equal(lifecycleElement.type.name, "ProviderLifecycle");
 
   root.StashBetterSceneCard.clearRecommendationScores();
+});
+
+test("evaluates mounted card chip formulas through the registry without awaiting", async () => {
+  const { patches, root } = loadPlugin();
+  const batches = [];
+  root.__chipSlots = JSON.stringify([
+    {
+      label: { type: "icon", name: "star" },
+      value: {
+        type: "function",
+        body: "return helpers.value('example.score', scene);",
+      },
+    },
+  ]);
+  root.StashBetterSceneCard.registerValue("example.score", {
+    get: () => undefined,
+    load: ({ sceneIds }) => batches.push(sceneIds),
+  });
+
+  const overlay = patches.get("SceneCard.Overlays")(
+    { scene: { id: "missing-value" } },
+    undefined,
+    { type: "native-overlays", props: { children: [] } },
+  );
+  const lifecycleElement = overlay.props.children[1].props.children[2];
+  lifecycleElement.type(lifecycleElement.props);
+  const cleanups = root.__effects.splice(0).map((effect) => effect()).filter(Boolean);
+  await new Promise((resolve) => setTimeout(resolve, 5));
+
+  assert.deepEqual(batches, [["missing-value"]]);
+  cleanups.forEach((cleanup) => cleanup());
 });
 
 test("patches the native root with card rule classes", () => {

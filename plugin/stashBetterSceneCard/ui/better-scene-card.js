@@ -4,9 +4,10 @@
   const { PluginApi } = root;
   const React = PluginApi.React;
   const rules = root.StashBetterSceneCardRules;
+  const chipSlotsApi = root.StashBetterSceneCardChipSlots;
   const ageCacheApi = root.StashBetterSceneCardAgeCache;
   const valueRegistryApi = root.StashBetterSceneCardValueRegistry;
-  if (!rules || !ageCacheApi || !valueRegistryApi) return;
+  if (!rules || !chipSlotsApi || !ageCacheApi || !valueRegistryApi) return;
 
   const Apollo = PluginApi.libraries.Apollo;
   const scores = new Map();
@@ -147,6 +148,16 @@
 
   function ProviderLifecycle({ scene }) {
     const [, setVersion] = React.useState(0);
+    const settings = PluginApi.hooks.useSettings();
+    const source = settings?.plugins?.stashBetterSceneCard?.chip_slots;
+    const slots = chipSlotsApi.parseChipSlots(source);
+    for (const slot of slots) {
+      chipSlotsApi.resolveSlot(slot, scene, {
+        value(name, requestedScene) {
+          return valueRegistry.value(name, requestedScene || scene);
+        },
+      });
+    }
     React.useEffect(() => {
       if (!scene || scene.id == null) return undefined;
       const unsubscribe = valueRegistry.subscribe(() => {
