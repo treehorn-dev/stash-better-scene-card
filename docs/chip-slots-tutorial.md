@@ -23,10 +23,10 @@ read any field available on the card's `scene` object. They must return
 synchronously: a Promise or other thenable is treated as an error and that chip
 is hidden.
 
-Invalid JSON, invalid formulas, thrown errors, invalid labels/styles, and
-non-finite numeric values hide only the affected chip. Better Scene Card logs
-one deduplicated console warning per configuration revision so a broken chip
-does not break Stash's native cards.
+Invalid JSON and formula errors emit one deduplicated console warning per
+configuration revision. Invalid labels, styles, non-finite values, and absent
+provider values silently hide only that chip. A broken chip therefore does not
+break Stash's native cards.
 
 ## JSON Schema
 

@@ -45,6 +45,7 @@ test("builds an installable Stash package and matching release index", () => {
     const tutorial = execFileSync("unzip", ["-p", archivePath, "docs/chip-slots-tutorial.md"], {
       encoding: "utf8",
     });
+    const normalizedTutorial = tutorial.toLowerCase().replace(/\s+/g, " ");
     for (const example of [
       "Local rating",
       "External predicted rating",
@@ -58,10 +59,11 @@ test("builds an installable Stash package and matching release index", () => {
       "get({ scene })",
       "load({ sceneIds, signal })",
       "trusted code",
-      "error",
+      "Invalid JSON and formula errors emit one deduplicated console warning",
+      "Invalid labels, styles, non-finite values, and absent provider values silently hide only that chip",
     ]) {
       assert.ok(
-        tutorial.toLowerCase().includes(example.toLowerCase()),
+        normalizedTutorial.includes(example.toLowerCase()),
         `tutorial should include ${example}`,
       );
     }
