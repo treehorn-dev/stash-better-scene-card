@@ -10,6 +10,10 @@
         type: "function",
         body: "const rating = Number(scene.rating100); return rating > 0 ? rating / 20 : helpers.value('stash-recommendations.predicted-rating', scene);",
       },
+      mode: {
+        type: "function",
+        body: "return Number(scene.rating100) > 0 ? 'filled' : 'border';",
+      },
       color: {
         type: "scale",
         min: { value: 0, color: "#000000" },
@@ -199,9 +203,18 @@
       color = { type: "function", fn };
     }
 
-    const mode = slot.mode === "border" ? "border" : "filled";
+    let mode = slot.mode === "border" ? "border" : "filled";
+    if (slot.mode && slot.mode.type === "function") {
+      mode = compileFunction(
+        slot.mode.body,
+        options,
+        `mode:${slot.mode.body}`,
+        "Chip slot mode formula is invalid",
+      );
+      if (!mode) return null;
+    }
     let fill = null;
-    if (mode === "border") {
+    if (mode === "border" || typeof mode === "function") {
       const configuredFill = slot.fill || {};
       const color = typeof configuredFill.color === "string" && parseColor(configuredFill.color)
         ? configuredFill.color
@@ -305,8 +318,18 @@
       style = validStyle(result);
       if (!style) return null;
     }
-    const result = { label: validResolvedLabel, value, mode: slot.mode, style };
-    if (slot.fill) result.fill = slot.fill;
+    const mode = typeof slot.mode === "function"
+      ? resolveFunction(
+          slot.mode,
+          context,
+          options,
+          `mode:${slot.mode.toString()}`,
+          "Chip slot mode formula failed",
+        )
+      : slot.mode;
+    if (mode !== "filled" && mode !== "border") return null;
+    const result = { label: validResolvedLabel, value, mode, style };
+    if (mode === "border" && slot.fill) result.fill = slot.fill;
     return result;
   }
 

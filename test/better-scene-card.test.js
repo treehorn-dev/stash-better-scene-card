@@ -8,7 +8,7 @@ const rules = require("../plugin/stashBetterSceneCard/ui/card-rules-model.js");
 const chipSlotsApi = require("../plugin/stashBetterSceneCard/ui/chip-slots-model.js");
 const valueRegistryApi = require("../plugin/stashBetterSceneCard/ui/value-provider-registry.js");
 
-function loadPlugin({ registryApi = valueRegistryApi } = {}) {
+function loadPlugin({ chipSlots = chipSlotsApi, registryApi = valueRegistryApi } = {}) {
   const patches = new Map();
   let root;
   const React = {
@@ -49,7 +49,7 @@ function loadPlugin({ registryApi = valueRegistryApi } = {}) {
       },
     },
     StashBetterSceneCardRules: rules,
-    StashBetterSceneCardChipSlots: chipSlotsApi,
+    StashBetterSceneCardChipSlots: chipSlots,
     StashBetterSceneCardAgeCache: {
       createPerformerAgeCache: () => ({ getMany: async () => ({}) }),
     },
@@ -106,6 +106,33 @@ test("default score chip falls back to a registered external value provider", ()
   const slotRail = configuredSlotsElement.type(configuredSlotsElement.props);
   const scoreChip = slotRail.props.children[0];
   assert.equal(scoreChip.props.children[1], "4.2");
+  assert.equal(scoreChip.props.className.includes("better-scene-card__badge--border"), true);
+});
+
+test("shares compiled slots between rendering and provider lifecycle until configuration changes", () => {
+  let parseCalls = 0;
+  const { patches, root } = loadPlugin({
+    chipSlots: {
+      ...chipSlotsApi,
+      parseChipSlots(source) {
+        parseCalls += 1;
+        return chipSlotsApi.parseChipSlots(source);
+      },
+    },
+  });
+  root.__chipSlots = JSON.stringify([
+    { label: { type: "text", value: "Score" }, value: { type: "function", body: "return 1;" } },
+  ]);
+
+  const overlay = patches.get("SceneCard.Overlays")(
+    { scene: { id: "compiled" } },
+    undefined,
+    { type: "native-overlays", props: { children: [] } },
+  );
+  const [configuredSlots, lifecycle] = overlay.props.children[1].props.children;
+  configuredSlots.type(configuredSlots.props);
+  lifecycle.type(lifecycle.props);
+  assert.equal(parseCalls, 1);
 });
 
 test("evaluates mounted card chip formulas through the registry without awaiting", async () => {

@@ -11,6 +11,8 @@
 
   const Apollo = PluginApi.libraries.Apollo;
   const valueRegistry = valueRegistryApi.createValueProviderRegistry();
+  let compiledSlots = null;
+  let compiledSlotsSource;
   const FIND_PERFORMER_BIRTHDATES = Apollo.gql`
     query BetterSceneCardPerformerBirthdates($ids: [ID!]) {
       findPerformers(ids: $ids, filter: { per_page: 100 }) {
@@ -140,10 +142,19 @@
     return React.createElement("span", { "data-icon": label.name }, label.name);
   }
 
+  function slotsForConfiguration(source) {
+    const normalizedSource = source == null ? "" : source;
+    if (compiledSlots === null || compiledSlotsSource !== normalizedSource) {
+      compiledSlotsSource = normalizedSource;
+      compiledSlots = chipSlotsApi.parseChipSlots(normalizedSource);
+    }
+    return compiledSlots;
+  }
+
   function ConfiguredChipSlots({ scene }) {
     const [, setVersion] = React.useState(0);
     const settings = PluginApi.hooks.useSettings();
-    const slots = chipSlotsApi.parseChipSlots(settings?.plugins?.stashBetterSceneCard?.chip_slots);
+    const slots = slotsForConfiguration(settings?.plugins?.stashBetterSceneCard?.chip_slots);
     React.useEffect(() => valueRegistry.subscribe(() => {
       setVersion((version) => version + 1);
     }), []);
@@ -176,7 +187,7 @@
     const [, setVersion] = React.useState(0);
     const settings = PluginApi.hooks.useSettings();
     const source = settings?.plugins?.stashBetterSceneCard?.chip_slots;
-    const slots = chipSlotsApi.parseChipSlots(source);
+    const slots = slotsForConfiguration(source);
     const requestedValues = new Map();
     for (const slot of slots) {
       chipSlotsApi.resolveSlot(slot, scene, {

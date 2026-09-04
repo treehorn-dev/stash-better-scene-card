@@ -30,6 +30,20 @@ test("default slots preserve score and O-to-play behavior", () => {
   assert.equal(DEFAULT_CHIP_SLOTS.length, 2);
 });
 
+test("a mode function renders local ratings filled and external values as border chips", () => {
+  const slot = compileSlot({
+    label: { type: "text", value: "Score" },
+    mode: {
+      type: "function",
+      body: "return Number(scene.rating100) > 0 ? 'filled' : 'border';",
+    },
+    value: { type: "function", body: "return 4.2;" },
+  });
+
+  assert.equal(resolveSlot(slot, { rating100: 80 }).mode, "filled");
+  assert.equal(resolveSlot(slot, { rating100: null }).mode, "border");
+});
+
 test("parsing preserves order but caps chip slots at three", () => {
   const source = JSON.stringify(
     Array.from({ length: 4 }, (_, index) => ({
