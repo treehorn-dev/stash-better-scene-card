@@ -8,7 +8,7 @@
       label: { type: "icon", name: "star" },
       value: {
         type: "function",
-        body: "const rating = Number(scene.rating100); return rating > 0 ? rating / 20 : null;",
+        body: "const rating = Number(scene.rating100); return rating > 0 ? rating / 20 : helpers.value('stash-recommendations.predicted-rating', scene);",
       },
       color: {
         type: "scale",

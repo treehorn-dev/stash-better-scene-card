@@ -64,39 +64,48 @@ function loadPlugin({ registryApi = valueRegistryApi } = {}) {
   return { patches, root };
 }
 
-test("registers only after patches and exposes provider registration with overlay lifecycle", () => {
+test("renders configured chip slots in order, caps them at three, and hides absent provider values", () => {
   const { patches, root } = loadPlugin();
+  root.__chipSlots = JSON.stringify([
+    { label: { type: "text", value: "First" }, value: { type: "function", body: "return 1;" } },
+    { label: { type: "text", value: "Missing" }, value: { type: "function", body: "return helpers.value('missing.provider', scene);" } },
+    { label: { type: "text", value: "Second" }, value: { type: "function", body: "return 2;" } },
+    { label: { type: "text", value: "Third" }, value: { type: "function", body: "return 3;" } },
+    { label: { type: "text", value: "Fourth" }, value: { type: "function", body: "return 4;" } },
+  ]);
 
-  assert.deepEqual([...patches.keys()].sort(), ["SceneCard", "SceneCard.Details", "SceneCard.Overlays"]);
-  assert.equal(typeof root.StashBetterSceneCard.setRecommendationScore, "function");
-  assert.equal(typeof root.StashBetterSceneCard.clearRecommendationScores, "function");
-  assert.equal(typeof root.StashBetterSceneCard.registerValue, "function");
-  assert.equal(
-    root.StashBetterSceneCard.registerValue("example.score", {
-      get: () => 4.2,
-      load: () => undefined,
-    }),
-    true,
+  const overlay = patches.get("SceneCard.Overlays")(
+    { scene: { id: "42" } },
+    undefined,
+    { type: "native-overlays", props: { children: [] } },
   );
-  root.StashBetterSceneCard.setRecommendationScore("42", 4.2);
+  const configuredSlotsElement = overlay.props.children[1].props.children[0];
+  const slotRail = configuredSlotsElement.type(configuredSlotsElement.props);
+  const chips = slotRail.props.children;
+  assert.deepEqual(chips.map((chip) => chip.props["data-chip-label"]), ["First", "Second"]);
+  assert.deepEqual(chips.map((chip) => chip.props.children[1]), ["1", "2"]);
+
+  const lifecycleElement = overlay.props.children[1].props.children[1];
+  assert.equal(lifecycleElement.type.name, "ProviderLifecycle");
+  assert.equal(typeof root.StashBetterSceneCard.registerValue, "function");
+});
+
+test("default score chip falls back to a registered external value provider", () => {
+  const { patches, root } = loadPlugin();
+  root.StashBetterSceneCard.registerValue("stash-recommendations.predicted-rating", {
+    get: () => 4.2,
+    load: () => undefined,
+  });
 
   const overlay = patches.get("SceneCard.Overlays")(
     { scene: { id: "42", rating100: null } },
     undefined,
     { type: "native-overlays", props: { children: [] } },
   );
-  const badgeElement = overlay.props.children[1].props.children[0];
-  const badge = badgeElement.type(badgeElement.props);
-  assert.equal(badge.props.className.includes("better-scene-card__badge--predicted"), true);
-  assert.equal(badge.props.children[0], "4.2");
-
-  const oPlayBadgeElement = overlay.props.children[1].props.children[1];
-  const oPlayBadge = oPlayBadgeElement.type(oPlayBadgeElement.props);
-  assert.equal(oPlayBadge.props.className.includes("better-scene-card__o-play--0"), true);
-  const lifecycleElement = overlay.props.children[1].props.children[2];
-  assert.equal(lifecycleElement.type.name, "ProviderLifecycle");
-
-  root.StashBetterSceneCard.clearRecommendationScores();
+  const configuredSlotsElement = overlay.props.children[1].props.children[0];
+  const slotRail = configuredSlotsElement.type(configuredSlotsElement.props);
+  const scoreChip = slotRail.props.children[0];
+  assert.equal(scoreChip.props.children[1], "4.2");
 });
 
 test("evaluates mounted card chip formulas through the registry without awaiting", async () => {
@@ -121,7 +130,7 @@ test("evaluates mounted card chip formulas through the registry without awaiting
     undefined,
     { type: "native-overlays", props: { children: [] } },
   );
-  const lifecycleElement = overlay.props.children[1].props.children[2];
+  const lifecycleElement = overlay.props.children[1].props.children[1];
   lifecycleElement.type(lifecycleElement.props);
   const cleanups = root.__effects.splice(0).map((effect) => effect()).filter(Boolean);
   await new Promise((resolve) => setTimeout(resolve, 5));
@@ -159,7 +168,7 @@ test("requests missing chip values from the committed lifecycle rather than rend
     undefined,
     { type: "native-overlays", props: { children: [] } },
   );
-  const lifecycleElement = overlay.props.children[1].props.children[2];
+  const lifecycleElement = overlay.props.children[1].props.children[1];
   lifecycleElement.type(lifecycleElement.props);
   assert.deepEqual(requests, []);
 

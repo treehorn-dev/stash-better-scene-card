@@ -10,7 +10,6 @@
   if (!rules || !chipSlotsApi || !ageCacheApi || !valueRegistryApi) return;
 
   const Apollo = PluginApi.libraries.Apollo;
-  const scores = new Map();
   const valueRegistry = valueRegistryApi.createValueProviderRegistry();
   const FIND_PERFORMER_BIRTHDATES = Apollo.gql`
     query BetterSceneCardPerformerBirthdates($ids: [ID!]) {
@@ -114,35 +113,62 @@
     );
   }
 
-  function ScoreBadge({ scene }) {
-    const badge = rules.ratingBadge(scene, scores.get(String(scene.id)));
-    if (!badge) return null;
-    return React.createElement(
-      "span",
-      {
-        className: [
-          "better-scene-card__badge",
-          `better-scene-card__badge--${badge.mode}`,
-          badge.className,
-        ].join(" "),
-      },
-      badge.value.toFixed(1),
-    );
+  function rgba(hex, alpha) {
+    const match = /^#([0-9a-f]{6})$/i.exec(hex || "");
+    if (!match) return hex;
+    const value = match[1];
+    return `rgba(${Number.parseInt(value.slice(0, 2), 16)}, ${Number.parseInt(value.slice(2, 4), 16)}, ${Number.parseInt(value.slice(4, 6), 16)}, ${alpha})`;
   }
 
-  function OPlayBadge({ scene }) {
-    const plays = Number(scene.play_count) || 0;
-    const oCount = Number(scene.o_counter) || 0;
-    const ratio = plays > 0 ? Math.max(0, Math.min(1, oCount / plays)) : 0;
-    const bucket = Math.round(ratio * 100);
+  function chipStyle(slot) {
+    const style = { ...slot.style };
+    if (slot.mode !== "border") return style;
+    const borderColor = style.borderColor || style.backgroundColor || style.color;
+    if (borderColor) style.borderColor = borderColor;
+    if (slot.fill) style.backgroundColor = rgba(slot.fill.color, slot.fill.alpha);
+    return style;
+  }
+
+  function renderChipLabel(label) {
+    if (label.type === "text") return label.value;
+    const FontAwesomeIcon = PluginApi.libraries.ReactFontAwesome?.FontAwesomeIcon;
+    const icons = PluginApi.libraries.FontAwesomeSolid || {};
+    const iconKey = `fa${label.name.replace(/(?:^|-)([a-z])/g, (_match, letter) => letter.toUpperCase())}`;
+    if (FontAwesomeIcon && icons[iconKey]) {
+      return React.createElement(FontAwesomeIcon, { fixedWidth: true, icon: icons[iconKey] });
+    }
+    return React.createElement("span", { "data-icon": label.name }, label.name);
+  }
+
+  function ConfiguredChipSlots({ scene }) {
+    const [, setVersion] = React.useState(0);
+    const settings = PluginApi.hooks.useSettings();
+    const slots = chipSlotsApi.parseChipSlots(settings?.plugins?.stashBetterSceneCard?.chip_slots);
+    React.useEffect(() => valueRegistry.subscribe(() => {
+      setVersion((version) => version + 1);
+    }), []);
+    const resolved = slots
+      .map((slot) => chipSlotsApi.resolveSlot(slot, scene, {
+        value(name, requestedScene) {
+          return valueRegistry.value(name, requestedScene || scene);
+        },
+      }))
+      .filter(Boolean)
+      .slice(0, 3);
     return React.createElement(
-      "span",
-      {
-        className: `better-scene-card__badge better-scene-card__o-play better-scene-card__o-play--${bucket}`,
-        style: { backgroundColor: rules.oPlayColor(ratio) },
-        title: "O-to-play ratio",
-      },
-      `O/P ${bucket}%`,
+      "div",
+      { className: "better-scene-card__configured-chips" },
+      ...resolved.map((slot, index) => React.createElement(
+        "span",
+        {
+          "data-chip-label": slot.label.type === "text" ? slot.label.value : slot.label.name,
+          className: `better-scene-card__badge better-scene-card__badge--${slot.mode}`,
+          key: `${slot.label.type}:${slot.label.type === "text" ? slot.label.value : slot.label.name}:${index}`,
+          style: chipStyle(slot),
+        },
+        renderChipLabel(slot.label),
+        String(slot.value),
+      )),
     );
   }
 
@@ -237,8 +263,7 @@
       React.createElement(
         "div",
         { className: "better-scene-card__badge-bar" },
-        React.createElement(ScoreBadge, { scene: props.scene || {} }),
-        React.createElement(OPlayBadge, { scene: props.scene || {} }),
+        React.createElement(ConfiguredChipSlots, { scene: props.scene || {} }),
         React.createElement(ProviderLifecycle, { scene: props.scene || {} }),
       ),
     );
@@ -247,14 +272,6 @@
   root.StashBetterSceneCard = {
     registerValue(name, provider) {
       return valueRegistry.registerValue(name, provider);
-    },
-    clearRecommendationScores() {
-      scores.clear();
-    },
-    setRecommendationScore(sceneId, score) {
-      const value = Number(score);
-      if (!sceneId || !Number.isFinite(value)) return;
-      scores.set(String(sceneId), Math.max(0, Math.min(5, value)));
     },
   };
 })(typeof globalThis !== "undefined" ? globalThis : this);
