@@ -3,8 +3,14 @@ description: Configurable visual rules and overlays for native Stash scene cards
 version: "0.1.0"
 url: https://github.com/treehorn-dev/stash-better-scene-card
 interface: raw
+settings:
+  chip_slots:
+    displayName: Chip Slots
+    description: Ordered JSON configuration for up to three card chips. Leave empty for score and O/play defaults.
+    default: ''
 ui:
   javascript:
+    - ui/chip-slots-model.js
     - ui/card-rules-model.js
     - ui/performer-age-cache.js
     - ui/better-scene-card.js
