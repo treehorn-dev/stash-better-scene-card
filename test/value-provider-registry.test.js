@@ -138,22 +138,30 @@ test("keeps value reads render-safe until the committed lifecycle requests a loa
 });
 
 test("drops pending IDs when their last observer unmounts before debounce flush", async () => {
-  const calls = [];
+  const firstCalls = [];
+  const secondCalls = [];
   const registry = createValueProviderRegistry();
   registry.registerValue("example.score", {
     get: () => undefined,
-    load: ({ sceneIds }) => calls.push(sceneIds),
+    load: ({ sceneIds }) => firstCalls.push(sceneIds),
+  });
+  registry.registerValue("example.other", {
+    get: () => undefined,
+    load: ({ sceneIds }) => secondCalls.push(sceneIds),
   });
 
   registry.observeScene({ id: "stale" });
   registry.request("example.score", { id: "stale" });
+  registry.request("example.other", { id: "stale" });
   registry.unobserveScene({ id: "stale" });
   await registry.flush();
-  assert.deepEqual(calls, []);
+  assert.deepEqual(firstCalls, []);
+  assert.deepEqual(secondCalls, []);
 
   registry.observeScene({ id: "stale" });
   await registry.flush();
-  assert.deepEqual(calls, []);
+  assert.deepEqual(firstCalls, []);
+  assert.deepEqual(secondCalls, []);
 });
 
 test("an aborted batch cannot clear a newer remounted batch's in-flight ownership", async () => {
