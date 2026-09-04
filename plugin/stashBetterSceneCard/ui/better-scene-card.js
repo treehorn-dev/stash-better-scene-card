@@ -151,24 +151,33 @@
     const settings = PluginApi.hooks.useSettings();
     const source = settings?.plugins?.stashBetterSceneCard?.chip_slots;
     const slots = chipSlotsApi.parseChipSlots(source);
+    const requestedValues = new Map();
     for (const slot of slots) {
       chipSlotsApi.resolveSlot(slot, scene, {
         value(name, requestedScene) {
-          return valueRegistry.value(name, requestedScene || scene);
+          const targetScene = requestedScene || scene;
+          if (targetScene && targetScene.id != null) {
+            requestedValues.set(`${name}:${targetScene.id}`, { name, scene: targetScene });
+          }
+          return valueRegistry.value(name, targetScene);
         },
       });
     }
+    const requestKey = [...requestedValues.keys()].sort().join(",");
     React.useEffect(() => {
       if (!scene || scene.id == null) return undefined;
       const unsubscribe = valueRegistry.subscribe(() => {
         setVersion((version) => version + 1);
       });
       valueRegistry.observeScene(scene);
+      for (const request of requestedValues.values()) {
+        valueRegistry.request(request.name, request.scene);
+      }
       return () => {
         unsubscribe();
         valueRegistry.unobserveScene(scene);
       };
-    }, [scene && scene.id]);
+    }, [scene && scene.id, requestKey]);
     return null;
   }
 

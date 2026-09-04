@@ -35,7 +35,9 @@
       for (const batch of entry.batches) {
         if (batch.ids.some(isObserved)) continue;
         batch.controller.abort();
-        for (const sceneId of batch.ids) entry.inFlight.delete(sceneId);
+        for (const sceneId of batch.ids) {
+          if (entry.inFlight.get(sceneId) === batch) entry.inFlight.delete(sceneId);
+        }
       }
     }
 
@@ -52,26 +54,37 @@
       providers.set(name, {
         provider,
         pending: new Set(),
-        inFlight: new Set(),
+        inFlight: new Map(),
         batches: new Set(),
       });
       notify();
       return true;
     }
 
+    function read(entry, scene) {
+      if (!entry || !scene || scene.id == null) return { missing: false, value: null };
+      let value;
+      try {
+        value = entry.provider.get({ scene });
+      } catch (_error) {
+        return { missing: false, value: null };
+      }
+      if (value != null && typeof value.then === "function") {
+        return { missing: false, value: null };
+      }
+      return { missing: value === undefined, value: value === undefined ? null : value };
+    }
+
     function value(name, scene) {
       const entry = providers.get(name);
-      if (!entry || !scene || scene.id == null) return null;
-      let result;
-      try {
-        result = entry.provider.get({ scene });
-      } catch (_error) {
-        return null;
-      }
-      if (result != null && typeof result.then === "function") return null;
-      if (result !== undefined) return result;
+      return read(entry, scene).value;
+    }
+
+    function request(name, scene) {
+      const entry = providers.get(name);
+      const result = read(entry, scene);
+      if (!entry || !result.missing || !scene || scene.id == null) return;
       queue(entry, String(scene.id));
-      return null;
     }
 
     function observeScene(scene) {
@@ -94,7 +107,7 @@
       const controller = new AbortController();
       const batch = { controller, ids };
       entry.batches.add(batch);
-      for (const sceneId of ids) entry.inFlight.add(sceneId);
+      for (const sceneId of ids) entry.inFlight.set(sceneId, batch);
       let load;
       try {
         load = entry.provider.load({ sceneIds: ids, signal: controller.signal });
@@ -105,7 +118,9 @@
         .catch(() => undefined)
         .finally(() => {
           entry.batches.delete(batch);
-          for (const sceneId of ids) entry.inFlight.delete(sceneId);
+          for (const sceneId of ids) {
+            if (entry.inFlight.get(sceneId) === batch) entry.inFlight.delete(sceneId);
+          }
           notify();
         });
     }
@@ -133,6 +148,7 @@
     return {
       flush,
       observeScene,
+      request,
       registerValue,
       subscribe,
       unobserveScene,

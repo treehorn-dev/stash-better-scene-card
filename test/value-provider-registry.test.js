@@ -34,9 +34,9 @@ test("coalesces missing scene IDs into one debounced provider batch", async () =
 
   registry.observeScene({ id: "1" });
   registry.observeScene({ id: "2" });
-  registry.value("example.score", { id: "1" });
-  registry.value("example.score", { id: "2" });
-  registry.value("example.score", { id: "1" });
+  registry.request("example.score", { id: "1" });
+  registry.request("example.score", { id: "2" });
+  registry.request("example.score", { id: "1" });
   await registry.flush();
 
   assert.deepEqual(calls, [["1", "2"]]);
@@ -55,9 +55,9 @@ test("does not reload scene IDs already in flight", async () => {
   });
 
   registry.observeScene({ id: "1" });
-  registry.value("example.score", { id: "1" });
+  registry.request("example.score", { id: "1" });
   const loading = registry.flush();
-  registry.value("example.score", { id: "1" });
+  registry.request("example.score", { id: "1" });
   await registry.flush();
   assert.deepEqual(calls, [["1"]]);
   pending.resolve();
@@ -77,7 +77,7 @@ test("aborts stale provider batches when their scenes unmount", async () => {
   });
 
   registry.observeScene({ id: "old" });
-  registry.value("example.score", { id: "old" });
+  registry.request("example.score", { id: "old" });
   const loading = registry.flush();
   registry.unobserveScene({ id: "old" });
 
@@ -97,7 +97,7 @@ test("notifies subscribers after a provider batch settles", async () => {
   registry.subscribe(() => notifications.push("changed"));
 
   registry.observeScene({ id: "1" });
-  registry.value("example.score", { id: "1" });
+  registry.request("example.score", { id: "1" });
   const loading = registry.flush();
   pending.resolve();
   await loading;
@@ -117,4 +117,53 @@ test("treats absent providers and invalid provider values as safely absent", () 
     true,
   );
   assert.equal(registry.value("async-cache", { id: "1" }), null);
+});
+
+test("keeps value reads render-safe until the committed lifecycle requests a load", async () => {
+  const calls = [];
+  const registry = createValueProviderRegistry();
+  registry.registerValue("example.score", {
+    get: () => undefined,
+    load: ({ sceneIds }) => calls.push(sceneIds),
+  });
+  registry.observeScene({ id: "1" });
+
+  assert.equal(registry.value("example.score", { id: "1" }), null);
+  await registry.flush();
+  assert.deepEqual(calls, []);
+
+  registry.request("example.score", { id: "1" });
+  await registry.flush();
+  assert.deepEqual(calls, [["1"]]);
+});
+
+test("an aborted batch cannot clear a newer remounted batch's in-flight ownership", async () => {
+  const first = deferred();
+  const second = deferred();
+  const calls = [];
+  const registry = createValueProviderRegistry();
+  registry.registerValue("example.score", {
+    get: () => undefined,
+    load: ({ sceneIds }) => {
+      calls.push(sceneIds);
+      return calls.length === 1 ? first.promise : second.promise;
+    },
+  });
+
+  registry.observeScene({ id: "1" });
+  registry.request("example.score", { id: "1" });
+  const firstLoading = registry.flush();
+  registry.unobserveScene({ id: "1" });
+  registry.observeScene({ id: "1" });
+  registry.request("example.score", { id: "1" });
+  const secondLoading = registry.flush();
+
+  first.resolve();
+  await firstLoading;
+  registry.request("example.score", { id: "1" });
+  await registry.flush();
+  assert.deepEqual(calls, [["1"], ["1"]]);
+
+  second.resolve();
+  await secondLoading;
 });

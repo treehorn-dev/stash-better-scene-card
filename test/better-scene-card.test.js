@@ -8,7 +8,7 @@ const rules = require("../plugin/stashBetterSceneCard/ui/card-rules-model.js");
 const chipSlotsApi = require("../plugin/stashBetterSceneCard/ui/chip-slots-model.js");
 const valueRegistryApi = require("../plugin/stashBetterSceneCard/ui/value-provider-registry.js");
 
-function loadPlugin() {
+function loadPlugin({ registryApi = valueRegistryApi } = {}) {
   const patches = new Map();
   let root;
   const React = {
@@ -53,7 +53,7 @@ function loadPlugin() {
     StashBetterSceneCardAgeCache: {
       createPerformerAgeCache: () => ({ getMany: async () => ({}) }),
     },
-    StashBetterSceneCardValueRegistry: valueRegistryApi,
+    StashBetterSceneCardValueRegistry: registryApi,
     __effects: [],
   };
   root.globalThis = root;
@@ -128,6 +128,43 @@ test("evaluates mounted card chip formulas through the registry without awaiting
 
   assert.deepEqual(batches, [["missing-value"]]);
   cleanups.forEach((cleanup) => cleanup());
+});
+
+test("requests missing chip values from the committed lifecycle rather than render", () => {
+  const requests = [];
+  const registry = {
+    observeScene() {},
+    request(name, scene) {
+      requests.push([name, scene.id]);
+    },
+    subscribe() {
+      return () => {};
+    },
+    unobserveScene() {},
+    value() {
+      return null;
+    },
+  };
+  const { patches, root } = loadPlugin({
+    registryApi: { createValueProviderRegistry: () => registry },
+  });
+  root.__chipSlots = JSON.stringify([
+    {
+      label: { type: "icon", name: "star" },
+      value: { type: "function", body: "return helpers.value('example.score', scene);" },
+    },
+  ]);
+  const overlay = patches.get("SceneCard.Overlays")(
+    { scene: { id: "committed" } },
+    undefined,
+    { type: "native-overlays", props: { children: [] } },
+  );
+  const lifecycleElement = overlay.props.children[1].props.children[2];
+  lifecycleElement.type(lifecycleElement.props);
+  assert.deepEqual(requests, []);
+
+  root.__effects.splice(0).forEach((effect) => effect());
+  assert.deepEqual(requests, [["example.score", "committed"]]);
 });
 
 test("patches the native root with card rule classes", () => {
