@@ -98,8 +98,12 @@
       if (!scene || scene.id == null) return;
       const sceneId = String(scene.id);
       const count = observedSceneIds.get(sceneId) || 0;
-      if (count <= 1) observedSceneIds.delete(sceneId);
-      else observedSceneIds.set(sceneId, count - 1);
+      if (count <= 1) {
+        observedSceneIds.delete(sceneId);
+        for (const entry of providers.values()) entry.pending.delete(sceneId);
+      } else {
+        observedSceneIds.set(sceneId, count - 1);
+      }
       for (const entry of providers.values()) abortStaleBatches(entry);
     }
 
