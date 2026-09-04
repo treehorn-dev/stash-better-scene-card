@@ -8,11 +8,17 @@
 
 .better-scene-card__badge-bar {
   display: flex;
+  flex-direction: column;
   gap: 0.35rem;
   left: 0.5rem;
   position: absolute;
-  top: 0.5rem;
+  top: 2.5rem;
   z-index: 2;
+}
+
+/* Keep Stash's hover-only selection checkbox visible above the chip rail. */
+.scene-card.better-scene-card .card-controls {
+  z-index: 3;
 }
 
 .better-scene-card__badge {
@@ -75,9 +81,7 @@
 }
 
 .better-scene-card__ages {
-  display: block;
-  font-size: 0.8rem;
-  margin-top: 0.2rem;
+  display: inline;
 }
 
 .better-scene-card__age--18 { color: #f00; }

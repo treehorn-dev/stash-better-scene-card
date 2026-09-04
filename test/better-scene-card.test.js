@@ -90,9 +90,13 @@ test("patches the native root with card rule classes", () => {
   assert.equal(result.props.className.includes("better-scene-card--o-play-50"), true);
 });
 
-test("renders individual gendered age labels with continuous age colors", () => {
+test("appends gendered ages to the native date line with only numbers colored", () => {
   const { patches, root } = loadPlugin();
   root.__ageBirthdates = { "1": "2000-01-01", "2": "1990-01-01" };
+  const dateLine = {
+    type: "span",
+    props: { className: "scene-card__date", children: ["2020-01-01"] },
+  };
   const details = patches.get("SceneCard.Details")(
     {
       scene: {
@@ -104,15 +108,40 @@ test("renders individual gendered age labels with continuous age colors", () => 
       },
     },
     undefined,
-    { type: "native-details", props: { children: ["date"] } },
+    { type: "native-details", props: { children: [dateLine, "details"] } },
   );
 
-  const ageLineElement = details.props.children[1];
+  const patchedDateLine = details.props.children[0];
+  assert.equal(patchedDateLine.props.className, "scene-card__date");
+  assert.equal(patchedDateLine.props.children[0], "2020-01-01");
+  const ageLineElement = patchedDateLine.props.children[1];
   const ageLine = ageLineElement.type(ageLineElement.props);
-  const female = ageLine.props.children[0];
-  const male = ageLine.props.children[1];
-  assert.equal(female.props.children[0], "♀ 20");
-  assert.equal(female.props.style.color, "rgb(255, 32, 0)");
-  assert.equal(male.props.children[0], "♂ 30");
-  assert.equal(male.props.style.color, "rgb(255, 191, 0)");
+  const [leadingSpace, femaleSymbol, femaleAge, separator, maleSymbol, maleAge] = ageLine.props.children;
+  assert.equal(leadingSpace, " ");
+  assert.equal(femaleSymbol.props.children[0], "♀");
+  assert.equal(femaleSymbol.props.style, undefined);
+  assert.equal(femaleAge.props.children[0], "20");
+  assert.equal(femaleAge.props.style.color, "rgb(255, 32, 0)");
+  assert.equal(separator, " ");
+  assert.equal(maleSymbol.props.children[0], "♂");
+  assert.equal(maleSymbol.props.style, undefined);
+  assert.equal(maleAge.props.children[0], "30");
+  assert.equal(maleAge.props.style.color, "rgb(255, 191, 0)");
+});
+
+test("omits performer ages when the scene has no valid production date", () => {
+  const { patches, root } = loadPlugin();
+  root.__ageBirthdates = { "1": "2000-01-01" };
+  const dateLine = {
+    type: "span",
+    props: { className: "scene-card__date", children: [""] },
+  };
+  const details = patches.get("SceneCard.Details")(
+    { scene: { performers: [{ id: "1", gender: "FEMALE" }] } },
+    undefined,
+    { type: "native-details", props: { children: [dateLine] } },
+  );
+
+  assert.equal(details.props.children.length, 1);
+  assert.deepEqual(details.props.children[0].props.children, [""]);
 });
