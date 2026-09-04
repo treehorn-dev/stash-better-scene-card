@@ -5,10 +5,12 @@
   const React = PluginApi.React;
   const rules = root.StashBetterSceneCardRules;
   const ageCacheApi = root.StashBetterSceneCardAgeCache;
-  if (!rules || !ageCacheApi) return;
+  const valueRegistryApi = root.StashBetterSceneCardValueRegistry;
+  if (!rules || !ageCacheApi || !valueRegistryApi) return;
 
   const Apollo = PluginApi.libraries.Apollo;
   const scores = new Map();
+  const valueRegistry = valueRegistryApi.createValueProviderRegistry();
   const FIND_PERFORMER_BIRTHDATES = Apollo.gql`
     query BetterSceneCardPerformerBirthdates($ids: [ID!]) {
       findPerformers(ids: $ids, filter: { per_page: 100 }) {
@@ -143,6 +145,22 @@
     );
   }
 
+  function ProviderLifecycle({ scene }) {
+    const [, setVersion] = React.useState(0);
+    React.useEffect(() => {
+      if (!scene || scene.id == null) return undefined;
+      const unsubscribe = valueRegistry.subscribe(() => {
+        setVersion((version) => version + 1);
+      });
+      valueRegistry.observeScene(scene);
+      return () => {
+        unsubscribe();
+        valueRegistry.unobserveScene(scene);
+      };
+    }, [scene && scene.id]);
+    return null;
+  }
+
   PluginApi.patch.after("SceneCard", (...args) => {
     const props = args[0] || {};
     const result = args.at(-1);
@@ -201,11 +219,15 @@
         { className: "better-scene-card__badge-bar" },
         React.createElement(ScoreBadge, { scene: props.scene || {} }),
         React.createElement(OPlayBadge, { scene: props.scene || {} }),
+        React.createElement(ProviderLifecycle, { scene: props.scene || {} }),
       ),
     );
   });
 
   root.StashBetterSceneCard = {
+    registerValue(name, provider) {
+      return valueRegistry.registerValue(name, provider);
+    },
     clearRecommendationScores() {
       scores.clear();
     },

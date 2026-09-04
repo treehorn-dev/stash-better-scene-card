@@ -5,6 +5,7 @@ const test = require("node:test");
 const vm = require("node:vm");
 
 const rules = require("../plugin/stashBetterSceneCard/ui/card-rules-model.js");
+const valueRegistryApi = require("../plugin/stashBetterSceneCard/ui/value-provider-registry.js");
 
 function loadPlugin() {
   const patches = new Map();
@@ -43,6 +44,7 @@ function loadPlugin() {
     StashBetterSceneCardAgeCache: {
       createPerformerAgeCache: () => ({ getMany: async () => ({}) }),
     },
+    StashBetterSceneCardValueRegistry: valueRegistryApi,
   };
   root.globalThis = root;
   vm.runInNewContext(
@@ -52,12 +54,20 @@ function loadPlugin() {
   return { patches, root };
 }
 
-test("registers only after patches and exposes the page-local score registry", () => {
+test("registers only after patches and exposes provider registration with overlay lifecycle", () => {
   const { patches, root } = loadPlugin();
 
   assert.deepEqual([...patches.keys()].sort(), ["SceneCard", "SceneCard.Details", "SceneCard.Overlays"]);
   assert.equal(typeof root.StashBetterSceneCard.setRecommendationScore, "function");
   assert.equal(typeof root.StashBetterSceneCard.clearRecommendationScores, "function");
+  assert.equal(typeof root.StashBetterSceneCard.registerValue, "function");
+  assert.equal(
+    root.StashBetterSceneCard.registerValue("example.score", {
+      get: () => 4.2,
+      load: () => undefined,
+    }),
+    true,
+  );
   root.StashBetterSceneCard.setRecommendationScore("42", 4.2);
 
   const overlay = patches.get("SceneCard.Overlays")(
@@ -73,6 +83,8 @@ test("registers only after patches and exposes the page-local score registry", (
   const oPlayBadgeElement = overlay.props.children[1].props.children[1];
   const oPlayBadge = oPlayBadgeElement.type(oPlayBadgeElement.props);
   assert.equal(oPlayBadge.props.className.includes("better-scene-card__o-play--0"), true);
+  const lifecycleElement = overlay.props.children[1].props.children[2];
+  assert.equal(lifecycleElement.type.name, "ProviderLifecycle");
 
   root.StashBetterSceneCard.clearRecommendationScores();
 });

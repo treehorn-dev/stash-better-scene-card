@@ -14,6 +14,7 @@ ui:
     - ui/chip-slots-model.js
     - ui/card-rules-model.js
     - ui/performer-age-cache.js
+    - ui/value-provider-registry.js
     - ui/better-scene-card.js
   css:
     - ui/better-scene-card.css
