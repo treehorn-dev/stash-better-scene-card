@@ -38,3 +38,13 @@ window.StashBetterSceneCard.clearRecommendationScores();
 The Stash `SceneCard` patch targets are experimental UI API surface. Validate
 the plugin after upgrading Stash, especially `/scenes`, fileless scenes,
 multi-video scenes, and cards rendered by other plugins.
+
+## Installation
+
+Add this package source in Stash:
+
+```text
+https://github.com/treehorn-dev/stash-better-scene-card/releases/latest/download/index.yml
+```
+
+Tagged releases attach the Stash package archive and `index.yml` automatically.
