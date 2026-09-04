@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 
 const {
   DEFAULT_CHIP_SLOTS,
+  clearDiagnostics,
   compileSlot,
   helpers,
   parseChipSlots,
@@ -106,6 +107,24 @@ test("color functions accept style objects and receive the resolved value", () =
     value: 2,
     mode: "border",
     style: { color: "#fff", borderColor: "#0ff" },
+    fill: { color: "#000000", alpha: 0.55 },
+  });
+});
+
+test("border slots preserve configured translucent fill color and alpha", () => {
+  const slot = compileSlot({
+    label: { type: "icon", name: "star" },
+    value: { type: "function", body: "return 1;" },
+    mode: "border",
+    fill: { color: "#101820", alpha: 0.4 },
+  });
+
+  assert.deepEqual(resolveSlot(slot, {}), {
+    label: { type: "icon", name: "star" },
+    value: 1,
+    mode: "border",
+    style: {},
+    fill: { color: "#101820", alpha: 0.4 },
   });
 });
 
@@ -151,4 +170,24 @@ test("helpers.value obtains synchronous scalar provider values only", () => {
     resolveSlot(slot, {}, { value: () => Promise.resolve(1) }),
     null,
   );
+});
+
+test("invalid JSON and formula failures produce deduplicated diagnostics", () => {
+  clearDiagnostics();
+  const diagnostics = [];
+  const options = { onDiagnostic: (diagnostic) => diagnostics.push(diagnostic) };
+
+  parseChipSlots("not JSON", options);
+  parseChipSlots("not JSON", options);
+  const broken = compileSlot({
+    label: { type: "icon", name: "star" },
+    value: { type: "function", body: "throw new Error('broken formula');" },
+  });
+  resolveSlot(broken, {}, options);
+  resolveSlot(broken, {}, options);
+
+  assert.deepEqual(diagnostics, [
+    "Invalid chip_slots JSON; using defaults.",
+    "Chip slot value formula failed; hiding slot.",
+  ]);
 });

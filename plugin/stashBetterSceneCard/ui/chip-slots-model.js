@@ -32,6 +32,23 @@
       },
     },
   ];
+  const reportedDiagnostics = new Set();
+
+  function clearDiagnostics() {
+    reportedDiagnostics.clear();
+  }
+
+  function reportDiagnostic(options, key, message) {
+    if (reportedDiagnostics.has(key)) return;
+    reportedDiagnostics.add(key);
+    if (options && typeof options.onDiagnostic === "function") {
+      options.onDiagnostic(message);
+      return;
+    }
+    if (typeof console !== "undefined" && typeof console.warn === "function") {
+      console.warn(`[Better Scene Card] ${message}`);
+    }
+  }
 
   function isThenable(value) {
     return value != null && typeof value.then === "function";
@@ -166,30 +183,51 @@
       color = { type: "function", fn };
     }
 
+    const mode = slot.mode === "border" ? "border" : "filled";
+    let fill = null;
+    if (mode === "border") {
+      const configuredFill = slot.fill || {};
+      const color = typeof configuredFill.color === "string" && parseColor(configuredFill.color)
+        ? configuredFill.color
+        : "#000000";
+      const alpha = Number(configuredFill.alpha);
+      fill = {
+        color,
+        alpha: Number.isFinite(alpha) && alpha >= 0 && alpha <= 1 ? alpha : 0.55,
+      };
+    }
+
     return {
       color,
+      fill,
       label,
-      mode: slot.mode === "border" ? "border" : "filled",
+      mode,
       value,
     };
   }
 
-  function parseChipSlots(source) {
+  function parseChipSlots(source, options) {
     if (source == null || source === "") return DEFAULT_CHIP_SLOTS.map(compileSlot);
     try {
       const parsed = typeof source === "string" ? JSON.parse(source) : source;
       if (!Array.isArray(parsed)) throw new Error("chip_slots must be an array");
       return parsed.slice(0, 3).map(compileSlot).filter(Boolean);
     } catch (_error) {
+      reportDiagnostic(options, `invalid-json:${String(source)}`, "Invalid chip_slots JSON; using defaults.");
       return DEFAULT_CHIP_SLOTS.map(compileSlot);
     }
   }
 
-  function resolveFunction(fn, context) {
+  function resolveFunction(fn, context, options, key, message) {
     try {
       const result = fn(context);
-      return isThenable(result) ? null : result;
+      if (isThenable(result)) {
+        reportDiagnostic(options, `${key}:async`, `${message}; hiding slot.`);
+        return null;
+      }
+      return result;
     } catch (_error) {
+      reportDiagnostic(options, `${key}:error`, `${message}; hiding slot.`);
       return null;
     }
   }
@@ -207,12 +245,27 @@
   function resolveSlot(slot, scene, options = {}) {
     if (!slot) return null;
     const context = { scene, helpers: createHelpers(options.value), value: undefined };
-    const value = resolveFunction(slot.value, context);
+    const value = resolveFunction(
+      slot.value,
+      context,
+      options,
+      `value:${slot.value.toString()}`,
+      "Chip slot value formula failed",
+    );
     if (!isScalar(value) || value === null || (typeof value === "number" && !Number.isFinite(value))) {
       return null;
     }
     context.value = value;
-    const label = typeof slot.label === "function" ? resolveFunction(slot.label, context) : slot.label;
+    const label =
+      typeof slot.label === "function"
+        ? resolveFunction(
+            slot.label,
+            context,
+            options,
+            `label:${slot.label.toString()}`,
+            "Chip slot label formula failed",
+          )
+        : slot.label;
     const validResolvedLabel = validLabel(label);
     if (!validResolvedLabel) return null;
 
@@ -221,15 +274,24 @@
       const result =
         slot.color.type === "scale"
           ? resolveScale(slot.color.anchors, value)
-          : resolveFunction(slot.color.fn, context);
+          : resolveFunction(
+              slot.color.fn,
+              context,
+              options,
+              `color:${slot.color.fn.toString()}`,
+              "Chip slot color formula failed",
+            );
       style = validStyle(result);
       if (!style) return null;
     }
-    return { label: validResolvedLabel, value, mode: slot.mode, style };
+    const result = { label: validResolvedLabel, value, mode: slot.mode, style };
+    if (slot.fill) result.fill = slot.fill;
+    return result;
   }
 
   return {
     DEFAULT_CHIP_SLOTS,
+    clearDiagnostics,
     compileSlot,
     helpers,
     parseChipSlots,
