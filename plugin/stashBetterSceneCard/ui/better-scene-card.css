@@ -10,9 +10,9 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  left: 0.5rem;
+  left: 0;
   position: absolute;
-  top: 2.5rem;
+  top: 1.25rem;
   z-index: 2;
 }
 
@@ -24,7 +24,16 @@
 
 /* Keep Stash's hover-only selection checkbox visible above the chip rail. */
 .scene-card.better-scene-card .card-controls {
+  left: 0;
+  margin: 0;
+  padding: 0;
+  top: 0;
   z-index: 3;
+}
+
+.scene-card.better-scene-card .card-check {
+  margin: 0;
+  padding: 0;
 }
 
 .better-scene-card__badge {
