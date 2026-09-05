@@ -8,7 +8,11 @@ const rules = require("../plugin/stashBetterSceneCard/ui/card-rules-model.js");
 const chipSlotsApi = require("../plugin/stashBetterSceneCard/ui/chip-slots-model.js");
 const valueRegistryApi = require("../plugin/stashBetterSceneCard/ui/value-provider-registry.js");
 
-function loadPlugin({ chipSlots = chipSlotsApi, registryApi = valueRegistryApi } = {}) {
+function loadPlugin({
+  chipSlots = chipSlotsApi,
+  registryApi = valueRegistryApi,
+  useSettings,
+} = {}) {
   const patches = new Map();
   let root;
   const React = {
@@ -32,9 +36,9 @@ function loadPlugin({ chipSlots = chipSlotsApi, registryApi = valueRegistryApi }
     PluginApi: {
       React,
       hooks: {
-        useSettings: () => ({
+        useSettings: useSettings || (() => ({
           plugins: { stashBetterSceneCard: { chip_slots: root.__chipSlots || "" } },
-        }),
+        })),
       },
       libraries: { Apollo: { gql: (strings) => strings.join("") } },
       patch: {
@@ -44,7 +48,14 @@ function loadPlugin({ chipSlots = chipSlotsApi, registryApi = valueRegistryApi }
       },
       utils: {
         StashService: {
-          getClient: () => ({ query: async () => ({ data: { findPerformers: { performers: [] } } }) }),
+          getClient: () => ({
+            query: async () => ({ data: { findPerformers: { performers: [] } } }),
+            readQuery: () => ({
+              configuration: {
+                plugins: { stashBetterSceneCard: { chip_slots: root.__chipSlots || "" } },
+              },
+            }),
+          }),
         },
       },
     },
@@ -63,6 +74,22 @@ function loadPlugin({ chipSlots = chipSlotsApi, registryApi = valueRegistryApi }
   );
   return { patches, root };
 }
+
+test("renders native SceneCard patches without a SettingsContext", () => {
+  const { patches } = loadPlugin({
+    useSettings: () => {
+      throw new Error("useSettings must be used within a SettingsContext");
+    },
+  });
+
+  const overlay = patches.get("SceneCard.Overlays")(
+    { scene: { id: "42" } },
+    undefined,
+    { type: "native-overlays", props: { children: [] } },
+  );
+  const configuredSlotsElement = overlay.props.children[1].props.children[0];
+  assert.doesNotThrow(() => configuredSlotsElement.type(configuredSlotsElement.props));
+});
 
 test("renders configured chip slots in order, caps them at three, and hides absent provider values", () => {
   const { patches, root } = loadPlugin();

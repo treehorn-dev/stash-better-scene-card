@@ -15,6 +15,7 @@ test("scopes the stock ribbon replacement to native scene cards", () => {
 
 test("renders compact poster badges in a left rail below the native selection control", () => {
   assert.match(stylesheet, /\.better-scene-card__badge-bar\s*\{[\s\S]*flex-direction:\s*column;/);
+  assert.match(stylesheet, /\.better-scene-card__configured-chips\s*\{[\s\S]*flex-direction:\s*column;/);
   assert.match(stylesheet, /\.better-scene-card__badge-bar\s*\{[\s\S]*left:\s*0\.5rem;/);
   assert.match(stylesheet, /\.better-scene-card__badge-bar\s*\{[\s\S]*top:\s*2\.5rem;/);
   assert.match(stylesheet, /\.better-scene-card__badge-bar\s*\{[\s\S]*z-index:\s*2;/);

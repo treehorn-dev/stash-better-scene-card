@@ -16,6 +16,12 @@
   z-index: 2;
 }
 
+.better-scene-card__configured-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
 /* Keep Stash's hover-only selection checkbox visible above the chip rail. */
 .scene-card.better-scene-card .card-controls {
   z-index: 3;

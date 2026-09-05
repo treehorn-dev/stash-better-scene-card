@@ -23,6 +23,13 @@
       }
     }
   `;
+  const CHIP_SLOTS_CONFIGURATION = Apollo.gql`
+    query BetterSceneCardConfiguration {
+      configuration {
+        plugins
+      }
+    }
+  `;
   const ageCache = ageCacheApi.createPerformerAgeCache(async (ids) => {
     const response = await PluginApi.utils.StashService.getClient().query({
       query: FIND_PERFORMER_BIRTHDATES,
@@ -151,10 +158,22 @@
     return compiledSlots;
   }
 
+  function configuredChipSlotsSource() {
+    try {
+      const configuration = PluginApi.utils.StashService.getClient().readQuery({
+        query: CHIP_SLOTS_CONFIGURATION,
+      });
+      const value = configuration?.configuration?.plugins?.stashBetterSceneCard?.chip_slots;
+      return typeof value === "string" ? value : "";
+    } catch (_error) {
+      // SceneCard patches are outside SettingsContext. Cache misses use the defaults safely.
+      return "";
+    }
+  }
+
   function ConfiguredChipSlots({ scene }) {
     const [, setVersion] = React.useState(0);
-    const settings = PluginApi.hooks.useSettings();
-    const slots = slotsForConfiguration(settings?.plugins?.stashBetterSceneCard?.chip_slots);
+    const slots = slotsForConfiguration(configuredChipSlotsSource());
     React.useEffect(() => valueRegistry.subscribe(() => {
       setVersion((version) => version + 1);
     }), []);
@@ -185,9 +204,7 @@
 
   function ProviderLifecycle({ scene }) {
     const [, setVersion] = React.useState(0);
-    const settings = PluginApi.hooks.useSettings();
-    const source = settings?.plugins?.stashBetterSceneCard?.chip_slots;
-    const slots = slotsForConfiguration(source);
+    const slots = slotsForConfiguration(configuredChipSlotsSource());
     const requestedValues = new Map();
     for (const slot of slots) {
       chipSlotsApi.resolveSlot(slot, scene, {
