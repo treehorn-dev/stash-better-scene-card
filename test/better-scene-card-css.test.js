@@ -21,8 +21,8 @@ test("renders compact poster badges in a left rail below the native selection co
   assert.match(stylesheet, /\.better-scene-card__badge-bar\s*\{[\s\S]*top:\s*0\.7rem;/);
   assert.match(stylesheet, /\.better-scene-card__badge-bar\s*\{[\s\S]*z-index:\s*2;/);
   assert.match(stylesheet, /\.scene-card\.better-scene-card \.card-controls\s*\{[\s\S]*z-index:\s*3;/);
-  assert.match(stylesheet, /\.scene-card\.better-scene-card \.card-controls\s*\{[\s\S]*left:\s*auto;/);
-  assert.match(stylesheet, /\.scene-card\.better-scene-card \.card-controls\s*\{[\s\S]*right:\s*0;/);
+  assert.match(stylesheet, /\.scene-card\.better-scene-card \.card-controls\s*\{[\s\S]*left:\s*0;/);
+  assert.match(stylesheet, /\.scene-card\.better-scene-card \.card-controls\s*\{[\s\S]*right:\s*auto;/);
   assert.match(stylesheet, /\.scene-card\.better-scene-card \.card-controls\s*\{[\s\S]*top:\s*0;/);
   assert.match(stylesheet, /\.scene-card\.better-scene-card \.card-check\s*\{[\s\S]*margin:\s*0;/);
   assert.match(stylesheet, /\.scene-card\.better-scene-card \.card-check\s*\{[\s\S]*padding:\s*0;/);

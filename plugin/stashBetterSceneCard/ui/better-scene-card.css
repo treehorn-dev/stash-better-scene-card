@@ -25,10 +25,10 @@
 
 /* Keep Stash's hover-only selection checkbox visible above the chip rail. */
 .scene-card.better-scene-card .card-controls {
-  left: auto;
+  left: 0;
   margin: 0;
   padding: 0;
-  right: 0;
+  right: auto;
   top: 0;
   z-index: 3;
 }
