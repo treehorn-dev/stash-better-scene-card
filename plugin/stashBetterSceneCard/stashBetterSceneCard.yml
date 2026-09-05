@@ -8,7 +8,6 @@ settings:
     displayName: Chip Slots
     description: Ordered JSON configuration for up to three card chips. Leave empty for score and O/play defaults.
     type: STRING
-    default: ''
 ui:
   javascript:
     - ui/chip-slots-model.js
