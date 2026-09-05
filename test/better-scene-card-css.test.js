@@ -16,11 +16,13 @@ test("scopes the stock ribbon replacement to native scene cards", () => {
 test("renders compact poster badges in a left rail below the native selection control", () => {
   assert.match(stylesheet, /\.better-scene-card__badge-bar\s*\{[\s\S]*flex-direction:\s*column;/);
   assert.match(stylesheet, /\.better-scene-card__configured-chips\s*\{[\s\S]*flex-direction:\s*column;/);
-  assert.match(stylesheet, /\.better-scene-card__badge-bar\s*\{[\s\S]*left:\s*0;/);
-  assert.match(stylesheet, /\.better-scene-card__badge-bar\s*\{[\s\S]*top:\s*1\.25rem;/);
+  assert.match(stylesheet, /\.better-scene-card__configured-chips\s*\{[\s\S]*align-items:\s*flex-start;/);
+  assert.match(stylesheet, /\.better-scene-card__badge-bar\s*\{[\s\S]*left:\s*0\.7rem;/);
+  assert.match(stylesheet, /\.better-scene-card__badge-bar\s*\{[\s\S]*top:\s*0\.7rem;/);
   assert.match(stylesheet, /\.better-scene-card__badge-bar\s*\{[\s\S]*z-index:\s*2;/);
   assert.match(stylesheet, /\.scene-card\.better-scene-card \.card-controls\s*\{[\s\S]*z-index:\s*3;/);
-  assert.match(stylesheet, /\.scene-card\.better-scene-card \.card-controls\s*\{[\s\S]*left:\s*0;/);
+  assert.match(stylesheet, /\.scene-card\.better-scene-card \.card-controls\s*\{[\s\S]*left:\s*auto;/);
+  assert.match(stylesheet, /\.scene-card\.better-scene-card \.card-controls\s*\{[\s\S]*right:\s*0;/);
   assert.match(stylesheet, /\.scene-card\.better-scene-card \.card-controls\s*\{[\s\S]*top:\s*0;/);
   assert.match(stylesheet, /\.scene-card\.better-scene-card \.card-check\s*\{[\s\S]*margin:\s*0;/);
   assert.match(stylesheet, /\.scene-card\.better-scene-card \.card-check\s*\{[\s\S]*padding:\s*0;/);
