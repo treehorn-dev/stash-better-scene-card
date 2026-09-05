@@ -11,8 +11,11 @@ test("plugin manifest declares the Better Scene Card UI assets", () => {
 
   assert.match(manifest, /^name: Better Scene Card$/m);
   assert.match(manifest, /^version: "0\.1\.0"$/m);
+  assert.match(manifest, /^    type: STRING$/m);
+  assert.match(manifest, /^  chip_slots:\n(?:    .*\n)*?    type: STRING$/m);
   assert.match(manifest, /^    - ui\/card-rules-model\.js$/m);
   assert.match(manifest, /^    - ui\/performer-age-cache\.js$/m);
+  assert.match(manifest, /^    - ui\/value-provider-registry\.js$/m);
   assert.match(manifest, /^    - ui\/better-scene-card\.js$/m);
   assert.match(manifest, /^    - ui\/better-scene-card\.css$/m);
 });
